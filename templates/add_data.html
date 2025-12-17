@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Добавить данные - Финансовая система{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #333;
+    }
+    
+    input, select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+        font-family: inherit;
+    }
+    
+    input:focus, select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .form-container {
+        max-width: 600px;
+    }
+    
+    .alert {
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card form-container">
+    <h2 style="margin-bottom: 30px;">➕ Добавить финансовые данные</h2>
+    
+    <div id="message"></div>
+    
+    <form id="financialForm">
+        <div class="form-group">
+            <label for="month">📅 Месяц (1-12):</label>
+            <input type="number" id="month" name="month" min="1" max="12" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="year">📆 Год:</label>
+            <input type="number" id="year" name="year" value="2024" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="revenue">💰 Выручка (руб.):</label>
+            <input type="number" id="revenue" name="revenue" step="0.01" placeholder="Например: 150000" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="fixed_costs">📌 Постоянные издержки (руб.):</label>
+            <input type="number" id="fixed_costs" name="fixed_costs" step="0.01" placeholder="Например: 25000" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="variable_cost_percent">📊 Переменные издержки (% от выручки):</label>
+            <input type="number" id="variable_cost_percent" name="variable_cost_percent" step="0.01" min="0" max="100" placeholder="Например: 40" required>
+        </div>
+        
+        <button type="submit" class="btn" style="width: 100%; padding: 15px; font-size: 16px;">✅ Добавить данные</button>
+    </form>
+</div>
+
+<div class="card" style="margin-top: 30px; background: #f8f9fa;">
+    <h3>ℹ️ Справочная информация</h3>
+    <ul style="margin-left: 20px; margin-top: 15px;">
+        <li><strong>Выручка</strong> – общая сумма денег от продажи товаров</li>
+        <li><strong>Постоянные издержки</strong> – затраты, не зависящие от объема продаж (зарплата, аренда, коммунальные услуги)</li>
+        <li><strong>Переменные издержки</strong> – затраты, зависящие от объема продаж (% от выручки: логистика, упаковка, комиссии)</li>
+        <li><strong>Чистая прибыль</strong> = Выручка - Переменные издержки - Постоянные издержки</li>
+    </ul>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('financialForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        month: parseInt(document.getElementById('month').value),
+        year: parseInt(document.getElementById('year').value),
+        revenue: parseFloat(document.getElementById('revenue').value),
+        fixed_costs: parseFloat(document.getElementById('fixed_costs').value),
+        variable_cost_percent: parseFloat(document.getElementById('variable_cost_percent').value)
+    };
+    
+    try {
+        const response = await fetch('/api/add-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        const messageDiv = document.getElementById('message');
+        
+        if (response.ok) {
+            messageDiv.innerHTML = `<div class="alert alert-success">✅ Данные успешно добавлены! Чистая прибыль: ${result.data.net_profit} ₽</div>`;
+            document.getElementById('financialForm').reset();
+            setTimeout(() => window.location.href = '/', 2000);
+        } else {
+            messageDiv.innerHTML = `<div class="alert alert-error">❌ Ошибка: ${result.error}</div>`;
+        }
+    } catch (error) {
+        document.getElementById('message').innerHTML = `<div class="alert alert-error">❌ Ошибка сервера: ${error.message}</div>`;
+    }
+});
+</script>
+{% endblock %}

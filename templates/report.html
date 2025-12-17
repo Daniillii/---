@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Отчёт - Финансовая система{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-section {
+        margin-bottom: 30px;
+    }
+    
+    .metric-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+    
+    .metric-box.success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    }
+    
+    .metric-box.warning {
+        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    
+    table th {
+        background: #667eea;
+        color: white;
+        padding: 12px;
+        text-align: left;
+    }
+    
+    table td {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    table tr:hover {
+        background: #f8f9fa;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 30px;">📈 Финансовый отчёт</h2>
+
+{% if all_data %}
+    <!-- Общая статистика -->
+    <div class="report-section">
+        <h3 style="margin-bottom: 15px;">📊 Общие показатели</h3>
+        
+        {% set total_revenue = all_data | map(attribute='revenue') | sum %}
+        {% set total_costs = all_data | map(attribute='fixed_costs') | sum + all_data | map(attribute='variable_costs') | sum %}
+        {% set total_profit = all_data | map(attribute='net_profit') | sum %}
+        {% set avg_margin = (all_data | map(attribute='profit_margin') | sum) / all_data | length %}
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+            <div class="metric-box">
+                <p style="opacity: 0.9;">Общая выручка</p>
+                <p style="font-size: 24px; font-weight: bold;">{{ "%.2f"|format(total_revenue) }} ₽</p>
+            </div>
+            
+            <div class="metric-box warning">
+                <p style="opacity: 0.9;">Общие издержки</p>
+                <p style="font-size: 24px; font-weight: bold;">{{ "%.2f"|format(total_costs) }} ₽</p>
+            </div>
+            
+            <div class="metric-box success">
+                <p style="opacity: 0.9;">Общая чистая прибыль</p>
+                <p style="font-size: 24px; font-weight: bold;">{{ "%.2f"|format(total_profit) }} ₽</p>
+            </div>
+            
+            <div class="metric-box">
+                <p style="opacity: 0.9;">Средняя маржа прибыли</p>
+                <p style="font-size: 24px; font-weight: bold;">{{ "%.2f"|format(avg_margin) }}%</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Таблица по месяцам -->
+    <div class="report-section">
+        <h3 style="margin-bottom: 15px;">📅 Детальный анализ по месяцам</h3>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>📅 Период</th>
+                    <th style="text-align: right;">💰 Выручка</th>
+                    <th style="text-align: right;">📌 Пост. издержки</th>
+                    <th style="text-align: right;">📊 Пер. издержки</th>
+                    <th style="text-align: right;">📈 Валовая прибыль</th>
+                    <th style="text-align: right;">💵 Чистая прибыль</th>
+                    <th style="text-align: center;">%</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in all_data %}
+                <tr style="{% if data.net_profit < 0 %}background: #ffebee;{% endif %}">
+                    <td><strong>{{ data.month }}/{{ data.year }}</strong></td>
+                    <td style="text-align: right;">{{ "%.2f"|format(data.revenue) }} ₽</td>
+                    <td style="text-align: right;">{{ "%.2f"|format(data.fixed_costs) }} ₽</td>
+                    <td style="text-align: right;">{{ "%.2f"|format(data.variable_costs or 0) }} ₽</td>
+                    <td style="text-align: right;">{{ "%.2f"|format(data.gross_profit or 0) }} ₽</td>
+                    <td style="text-align: right; font-weight: bold; color: {% if data.net_profit >= 0 %}#28a745{% else %}#dc3545{% endif %};">
+                        {{ "%.2f"|format(data.net_profit or 0) }} ₽
+                    </td>
+                    <td style="text-align: center;">{{ "%.1f"|format(data.profit_margin or 0) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Анализ трендов -->
+    <div class="report-section">
+        <h3 style="margin-bottom: 15px;">📈 Анализ тренда</h3>
+        
+        {% set first_month = all_data | first %}
+        {% set last_month = all_data | last %}
+        {% set revenue_change = ((last_month.revenue - first_month.revenue) / first_month.revenue * 100) if first_month.revenue > 0 else 0 %}
+        {% set profit_change = ((last_month.net_profit - first_month.net_profit) / first_month.net_profit * 100) if first_month.net_profit > 0 else 0 %}
+        
+        <div class="card" style="border-left: 4px solid #667eea;">
+            <p><strong>📊 Изменение выручки:</strong> 
+                <span style="color: {% if revenue_change > 0 %}#28a745{% else %}#dc3545{% endif %};">
+                    {% if revenue_change > 0 %}↑{% else %}↓{% endif %} {{ "%.2f"|format(revenue_change) }}%
+                </span>
+            </p>
+            <p style="margin-top: 10px;"><strong>💰 Изменение прибыли:</strong> 
+                <span style="color: {% if profit_change > 0 %}#28a745{% else %}#dc3545{% endif %};">
+                    {% if profit_change > 0 %}↑{% else %}↓{% endif %} {{ "%.2f"|format(profit_change) }}%
+                </span>
+            </p>
+        </div>
+    </div>
+
+{% else %}
+    <div class="card" style="text-align: center; padding: 60px 20px;">
+        <p style="font-size: 48px;">📭</p>
+        <p style="font-size: 18px; color: #999; margin-bottom: 20px;">Данные отсутствуют</p>
+        <a href="/form" class="btn">➕ Добавить данные</a>
+    </div>
+{% endif %}
+
+{% endblock %}
