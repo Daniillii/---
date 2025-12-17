@@ -6,11 +6,10 @@ from datetime import datetime
 import json
 
 def create_app(config_name='development'):
-    """Фабрика для создания Flask приложения"""
+    
     app = Flask(__name__)
     app.config.from_object(config[config_name])
-    
-    # Инициализация БД
+ 
     db.init_app(app)
     
     with app.app_context():
@@ -20,14 +19,12 @@ def create_app(config_name='development'):
 
 app = create_app('development')
 
-# ==================== МАРШРУТЫ ====================
 
 @app.route('/')
 def index():
-    """Главная страница с обзором данных"""
+
     all_data = FinancialData.query.order_by(FinancialData.year.desc(), FinancialData.month.desc()).all()
     
-    # Общие статистики
     total_revenue = sum(float(d.revenue) for d in all_data) if all_data else 0
     total_profit = sum(float(d.net_profit) if d.net_profit else 0 for d in all_data) if all_data else 0
     avg_margin = (sum(float(d.profit_margin) if d.profit_margin else 0 for d in all_data) / len(all_data)) if all_data else 0
@@ -44,7 +41,7 @@ def index():
 
 @app.route('/api/add-data', methods=['POST'])
 def add_financial_data():
-    """API для добавления финансовых данных"""
+
     try:
         data = request.get_json()
         
@@ -65,7 +62,6 @@ def add_financial_data():
         # Расчет показателей
         financial_data.calculate_metrics()
         
-        # Сохранение в БД
         db.session.add(financial_data)
         db.session.commit()
         
@@ -85,7 +81,6 @@ def generate_forecast():
     try:
         data = request.get_json()
         
-        # Создание прогноза
         forecast = Forecast(
             base_revenue=float(data.get('base_revenue', 100000)),
             growth_rate=float(data.get('growth_rate', 5)),
@@ -94,10 +89,8 @@ def generate_forecast():
             months_ahead=int(data.get('months_ahead', 12))
         )
         
-        # Генерация прогноза
         forecast_data = forecast.generate_forecast()
         
-        # Сохранение в БД
         db.session.add(forecast)
         db.session.commit()
         
@@ -134,7 +127,7 @@ def delete_data(data_id):
 
 @app.route('/api/analytics', methods=['GET'])
 def get_analytics():
-    """Получить аналитику по всем данным"""
+
     all_data = FinancialData.query.order_by(FinancialData.year, FinancialData.month).all()
     
     if not all_data:
@@ -156,35 +149,32 @@ def get_analytics():
 
 @app.route('/form')
 def form():
-    """Страница с формой добавления данных"""
+    
     return render_template('add_data.html')
 
 
 @app.route('/report')
 def report():
-    """Страница с отчётом и аналитикой"""
+
     all_data = FinancialData.query.order_by(FinancialData.year, FinancialData.month).all()
     return render_template('report.html', all_data=all_data)
 
 
 @app.errorhandler(404)
 def not_found(error):
-    """Обработка ошибки 404"""
+    
     return jsonify({'error': 'Not found'}), 404
 
 
 @app.errorhandler(500)
 def internal_error(error):
-    """Обработка ошибки 500"""
+    
     db.session.rollback()
     return jsonify({'error': 'Internal server error'}), 500
-
-
-# ==================== ИНИЦИАЛИЗАЦИЯ ====================
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-        print("✅ База данных инициализирована")
+        print(" База данных инициализирована")
     
     app.run(debug=True, host='0.0.0.0', port=8000)
